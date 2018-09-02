@@ -1,0 +1,60 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      - image: circleci/node:9.3.0
+
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/mongo:3.4.4
+
+    working_directory: ~/ng-core
+
+    steps:
+      - checkout
+
+      # - run: cp package.json package.postdeploy.json
+      # - run: cp package.deploy.json package.json
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+
+      - run: yarn install
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+
+      # run tests!
+      - run: yarn test
+      - store_artifacts:
+          path: coverage
+      - store_artifacts:
+          path: junit
+      - store_test_results:
+          path: junit
+
+      # # upload coverage file to codecov
+      # - run: ./node_modules/.bin/codecov
+
+      - deploy:
+          name: yarn build
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              yarn build
+            fi
+      - deploy:
+          name: yarn semantic-release
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              yarn semantic-release
+            fi
